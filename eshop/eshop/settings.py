@@ -28,8 +28,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG') == 'True'
+# DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost']
 
 
 # Application definition
@@ -43,7 +44,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     'rest_framework',
-    'product.apps.ProductConfig'
+    'django_filters',
+    'product.apps.ProductConfig',
+    'utils'
 ]
 
 MIDDLEWARE = [
@@ -85,6 +88,10 @@ DATABASES = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
+}
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'utils.custom_exception_handler.custom_exception_handler'
 }
 
 
