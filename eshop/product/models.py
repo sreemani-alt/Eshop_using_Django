@@ -1,5 +1,8 @@
+from pyexpat import model
 from django.db import models
 from django.contrib.auth.models import User
+from django.dispatch import receiver
+from django.db.models.signals import post_delete
 
 # Create your models here.
 
@@ -31,3 +34,7 @@ class ProductImages(models.Model):
     product=models.ForeignKey(Product, on_delete=models.CASCADE, null=True, related_name="images")
     image=models.ImageField(upload_to="products")
 
+@receiver(post_delete, sender = ProductImages)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    if instance.image:
+        instance.image.delete(save=False)

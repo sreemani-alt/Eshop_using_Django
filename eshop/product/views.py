@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework import status
 
 from .filters import ProductsFilter
 
@@ -12,7 +13,7 @@ from .models import Product, ProductImages
 # Create your views here.
 
 @api_view(['GET'])
-def get_products(request):
+def get_all_products(request):
 
     filterset = ProductsFilter(request.GET, queryset=Product.objects.all().order_by('id'))
 
@@ -96,3 +97,19 @@ def update_product(request,pk):
     serializer = ProductSerializer(product, many=False)
 
     return Response({"products": serializer.data})
+
+
+
+@api_view(['DELETE'])
+def delete_product(request,pk):
+    product = get_object_or_404(Product, id=pk)
+
+    # Check if the user is same - todo
+    args = {"product": pk}
+    images = ProductImages.objects.filter(**args)
+    for i in images:
+        i.delete()
+
+    product.delete()
+
+    return Response({'details': 'Product is deleted'}, status=status.HTTP_200_OK)
