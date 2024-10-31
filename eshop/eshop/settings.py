@@ -13,8 +13,10 @@ import os
 from pathlib import Path
 import dotenv
 from datetime import timedelta
+from dotenv import load_dotenv
 
-dotenv.read_dotenv()
+# Load environment variables from the .env file
+load_dotenv()
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -62,6 +64,19 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND='django.core.mail.backends.console.EmailBackend'
+
+
+
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.mailtrap.io')  
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))  
+EMAIL_USE_TLS = True  
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-secret-key') 
+
 
 ROOT_URLCONF = "eshop.urls"
 
