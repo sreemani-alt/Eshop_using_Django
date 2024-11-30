@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+from django.contrib.auth.models import User
 from rest_framework import status
 
 from .filters import OrdersFilter
@@ -184,3 +184,65 @@ def create_checkout_session(request):
     )
 
     return Response({ 'session': session })
+
+@api_view(['POST'])
+def stripe_webhook(request):
+
+    webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
+    payload = request.body
+    sig_header = request.META['HTTP_STRIPE_SIGNATURE']
+    event = None
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, webhook_secret
+        )
+
+    except ValueError as e:
+        return Response({ 'error': 'Invalid Payload' }, status=status.HTTP_400_BAD_REQUEST)
+    except stripe.error.SignatureVerificationError as e:
+        return Response({ 'error': 'Invalid signature' }, status=status.HTTP_400_BAD_REQUEST)
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+
+        line_items = stripe.checkout.Session.list_line_items(session['id'])
+
+        price = session['amount_total'] / 100
+
+        order = Order.objects.create(
+            user = User(session.metadata.user),
+            street = session.metadata.street,
+            city = session.metadata.city,
+            state = session.metadata.state,
+            zip_code = session.metadata.zip_code,
+            phone_no = session.metadata.phone_no,
+            country = session.metadata.country,
+            total_amount = price,
+            payment_mode = "Card",
+            payment_status = "PAID"
+        )
+
+        for item in line_items['data']:
+
+            print('item', item)
+
+            line_product = stripe.Product.retrieve(item.price.product)
+            product_id = line_product.metadata.product_id
+
+            product = Product.objects.get(id=product_id)
+
+            item = OrderItem.objects.create(
+                product=product,
+                order=order,
+                name = product.name,
+                quantity = item.quantity,
+                price = item.price.unit_amount / 100,
+                image = line_product.images[0]
+            )
+
+            product.stock -= item.quantity
+            product.save()
+
+
+        return Response({ 'details': 'Payment succesful'})
